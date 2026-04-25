@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sistema de Asistencia QR</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════
+   VARIABLES & RESET
+═══════════════════════════════════════════════ */
+:root{
+  --bg:#f0f4ff;
+  --sidebar-bg:#0f172a;
+  --sidebar-w:260px;
+  --primary:#4f46e5;
+  --primary-light:#6366f1;
+  --primary-glow:rgba(79,70,229,.18);
+  --accent:#06b6d4;
+  --success:#10b981;
+  --warning:#f59e0b;
+  --danger:#ef4444;
+  --surface:#ffffff;
+  --surface2:#f8faff;
+  --border:#e2e8f0;
+  --txt:#1e293b;
+  --txt2:#64748b;
+  --txt3:#94a3b8;
+  --radius:14px;
+  --radius-sm:8px;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(79,70,229,.08);
+  --shadow-md:0 4px 24px rgba(79,70,229,.14);
+  --transition:.2s ease;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--txt)}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit}
+a{text-decoration:none;color:inherit}
+ul{list-style:none}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
+
+/* ═══════════════════════════════════════════════
+   LOGIN
+═══════════════════════════════════════════════ */
+#loginPage{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;
+  background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);
+  position:relative;overflow:hidden;
+}
+#loginPage::before{
+  content:'';position:absolute;width:700px;height:700px;
+  background:radial-gradient(circle,rgba(99,102,241,.15) 0%,transparent 70%);
+  top:-200px;right:-200px;border-radius:50%;
+}
+#loginPage::after{
+  content:'';position:absolute;width:500px;height:500px;
+  background:radial-gradient(circle,rgba(6,182,212,.1) 0%,transparent 70%);
+  bottom:-100px;left:-100px;border-radius:50%;
+}
+.login-card{
+  background:rgba(255,255,255,.05);backdrop-filter:blur(24px);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:24px;padding:48px 44px;width:420px;max-width:95vw;
+  position:relative;z-index:1;
+  box-shadow:0 24px 80px rgba(0,0,0,.4);
+}
+.login-logo{
+  display:flex;align-items:center;gap:12px;margin-bottom:36px;
+}
+.login-logo-icon{
+  width:48px;height:48px;background:linear-gradient(135deg,var(--primary),var(--accent));
+  border-radius:14px;display:flex;align-items:center;justify-content:center;
+  font-size:22px;box-shadow:0 8px 24px rgba(79,70,229,.4);
+}
+.login-logo span{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px}
+.login-logo small{display:block;font-size:11px;color:rgba(255,255,255,.5);font-weight:400;letter-spacing:1px;text-transform:uppercase}
+.login-title{color:#fff;font-size:26px;font-weight:800;margin-bottom:6px}
+.login-sub{color:rgba(255,255,255,.45);font-size:14px;margin-bottom:32px}
+.field{margin-bottom:20px}
+.field label{display:block;font-size:12px;font-weight:600;color:rgba(255,255,255,.6);margin-bottom:8px;letter-spacing:.5px;text-transform:uppercase}
+.field input{
+  width:100%;padding:13px 16px;border-radius:10px;font-size:14px;font-weight:500;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  color:#fff;transition:var(--transition);outline:none;
+}
+.field input::placeholder{color:rgba(255,255,255,.25)}
+.field input:focus{border-color:var(--primary-light);background:rgba(79,70,229,.12);box-shadow:0 0 0 3px var(--primary-glow)}
+.btn-login{
+  width:100%;padding:14px;border-radius:10px;border:none;
+  background:linear-gradient(135deg,var(--primary),var(--primary-light));
+  color:#fff;font-size:15px;font-weight:700;letter-spacing:.3px;
+  box-shadow:0 6px 20px rgba(79,70,229,.4);
+  transition:var(--transition);margin-top:8px;
+}
+.btn-login:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(79,70,229,.5)}
+.btn-login:active{transform:translateY(0)}
+.login-hint{text-align:center;margin-top:20px;color:rgba(255,255,255,.3);font-size:12px}
+.login-hint b{color:rgba(255,255,255,.6)}
+
+/* ═══════════════════════════════════════════════
+   APP LAYOUT
+═══════════════════════════════════════════════ */
+#appPage{display:none;height:100vh;overflow:hidden}
+.app-shell{display:flex;height:100%}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--sidebar-w);min-width:var(--sidebar-w);height:100%;
+  background:var(--sidebar-bg);display:flex;flex-direction:column;
+  padding:0;overflow:hidden;position:relative;z-index:100;
+  transition:var(--transition);
+}
+.sidebar-header{
+  padding:24px 20px 16px;border-bottom:1px solid rgba(255,255,255,.05);
+}
+.sidebar-brand{display:flex;align-items:center;gap:12px}
+.brand-icon{
+  width:40px;height:40px;background:linear-gradient(135deg,var(--primary),var(--accent));
+  border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;box-shadow:0 4px 12px rgba(79,70,229,.4);
+}
+.brand-text{color:#fff;font-size:15px;font-weight:800;line-height:1.2}
+.brand-text small{display:block;font-size:10px;color:rgba(255,255,255,.35);font-weight:400;letter-spacing:1px;text-transform:uppercase}
+.sidebar-nav{flex:1;padding:16px 12px;overflow-y:auto}
+.nav-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:1.5px;text-transform:uppercase;padding:12px 8px 6px}
+.nav-item{
+  display:flex;align-items:center;gap:12px;padding:11px 12px;
+  border-radius:10px;color:rgba(255,255,255,.5);font-size:13.5px;font-weight:500;
+  cursor:pointer;transition:var(--transition);margin-bottom:2px;
+}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)}
+.nav-item.active{background:linear-gradient(135deg,rgba(79,70,229,.3),rgba(99,102,241,.2));color:#fff;font-weight:600}
+.nav-item.active .nav-icon{color:var(--primary-light)}
+.nav-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--primary);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
+.sidebar-footer{padding:16px 12px;border-top:1px solid rgba(255,255,255,.05)}
+.user-card{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  background:rgba(255,255,255,.04);border-radius:10px;
+}
+.user-avatar{
+  width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,var(--primary),var(--accent));
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;color:#fff;flex-shrink:0;
+}
+.user-info{flex:1;min-width:0}
+.user-name{color:#fff;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-rol{color:rgba(255,255,255,.3);font-size:10px;font-weight:500;letter-spacing:.5px}
+.logout-btn{
+  background:none;border:none;color:rgba(255,255,255,.3);font-size:16px;
+  padding:4px;border-radius:6px;transition:var(--transition);
+}
+.logout-btn:hover{color:var(--danger);background:rgba(239,68,68,.1)}
+
+/* ── MAIN AREA ── */
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{
+  height:64px;background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;flex-shrink:0;
+  box-shadow:0 1px 0 var(--border);
+}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.menu-toggle{
+  display:none;background:none;border:none;color:var(--txt2);font-size:20px;padding:6px;border-radius:8px;
+}
+.page-title{font-size:18px;font-weight:700;color:var(--txt)}
+.page-subtitle{font-size:12px;color:var(--txt3);margin-top:2px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.topbar-date{font-size:12px;color:var(--txt3);background:var(--surface2);padding:6px 12px;border-radius:8px;border:1px solid var(--border)}
+.topbar-badge{
+  width:34px;height:34px;border-radius:9px;background:var(--primary-glow);
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+  color:var(--primary);font-size:15px;cursor:pointer;transition:var(--transition);
+}
+.topbar-badge:hover{background:var(--primary);color:#fff}
+.content{flex:1;overflow-y:auto;padding:28px}
+
+/* ── OVERLAY MOBILE ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}
+
+/* ═══════════════════════════════════════════════
+   CARDS & STATS
+═══════════════════════════════════════════════ */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-bottom:28px}
+.stat-card{
+  background:var(--surface);border-radius:var(--radius);padding:22px;
+  border:1px solid var(--border);box-shadow:var(--shadow);
+  display:flex;align-items:center;gap:18px;transition:var(--transition);
+}
+.stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.stat-icon{
+  width:52px;height:52px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;
+}
+.stat-icon.blue{background:rgba(79,70,229,.1);color:var(--primary)}
+.stat-icon.green{background:rgba(16,185,129,.1);color:var(--success)}
+.stat-icon.yellow{background:rgba(245,158,11,.1);color:var(--warning)}
+.stat-icon.red{background:rgba(239,68,68,.1);color:var(--danger)}
+.stat-icon.cyan{background:rgba(6,182,212,.1);color:var(--accent)}
+.stat-num{font-size:30px;font-weight:800;color:var(--txt);line-height:1;margin-bottom:4px}
+.stat-label{font-size:12px;color:var(--txt3);font-weight:500}
+.stat-trend{font-size:11px;font-weight:600;margin-top:4px}
+.stat-trend.up{color:var(--success)}
+.stat-trend.down{color:var(--danger)}
+
+/* ═══════════════════════════════════════════════
+   SECTIONS & CARDS
+═══════════════════════════════════════════════ */
+.section-card{
+  background:var(--surface);border-radius:var(--radius);
+  border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:20px;
+  overflow:hidden;
+}
+.section-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 22px;border-bottom:1px solid var(--border);
+}
+.section-title{font-size:15px;font-weight:700;color:var(--txt)}
+.section-sub{font-size:12px;color:var(--txt3);margin-top:2px}
+.section-body{padding:22px}
+
+/* ─ Botones ─ */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;padding:9px 18px;
+  border-radius:var(--radius-sm);border:none;font-size:13px;font-weight:600;
+  transition:var(--transition);letter-spacing:.2px;
+}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(79,70,229,.3)}
+.btn-primary:hover{background:var(--primary-light);box-shadow:0 4px 16px rgba(79,70,229,.4)}
+.btn-outline{background:transparent;color:var(--primary);border:1.5px solid var(--primary)}
+.btn-outline:hover{background:var(--primary-glow)}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover{background:#059669}
+.btn-danger{background:transparent;color:var(--danger);border:1.5px solid var(--danger)}
+.btn-danger:hover{background:rgba(239,68,68,.08)}
+.btn-sm{padding:6px 13px;font-size:12px}
+.btn-icon{padding:8px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);color:var(--txt2)}
+.btn-icon:hover{background:var(--primary-glow);color:var(--primary);border-color:var(--primary)}
+
+/* ─ Tablas ─ */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  padding:11px 14px;text-align:left;font-size:11px;font-weight:700;
+  color:var(--txt3);letter-spacing:.8px;text-transform:uppercase;
+  background:var(--surface2);border-bottom:1px solid var(--border);
+}
+tbody tr{border-bottom:1px solid var(--border);transition:var(--transition)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+tbody td{padding:13px 14px;color:var(--txt);vertical-align:middle}
+.cell-name{font-weight:600}
+.cell-sub{font-size:11px;color:var(--txt3)}
+
+/* ─ Badges ─ */
+.badge{
+  display:inline-flex;align-items:center;gap:5px;padding:4px 10px;
+  border-radius:20px;font-size:11px;font-weight:700;
+}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.badge-puntual{background:#d1fae5;color:#065f46}.badge-puntual::before{background:var(--success)}
+.badge-tarde{background:#fee2e2;color:#991b1b}.badge-tarde::before{background:var(--danger)}
+.badge-admin{background:rgba(79,70,229,.1);color:var(--primary)}.badge-admin::before{background:var(--primary)}
+.badge-usuario{background:rgba(6,182,212,.1);color:#0891b2}.badge-usuario::before{background:var(--accent)}
+.badge-activo{background:#d1fae5;color:#065f46}.badge-activo::before{background:var(--success)}
+
+/* ─ Formularios ─ */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group label{font-size:12px;font-weight:600;color:var(--txt2);letter-spacing:.3px}
+.form-control{
+  padding:10px 13px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  font-size:13.5px;color:var(--txt);background:var(--surface);
+  transition:var(--transition);outline:none;
+}
+.form-control:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow)}
+.form-control::placeholder{color:var(--txt3)}
+.form-section-title{font-size:12px;font-weight:700;color:var(--txt3);letter-spacing:1px;text-transform:uppercase;margin:8px 0 4px;grid-column:1/-1;padding-top:4px;border-top:1px solid var(--border)}
+.dias-grid{display:flex;flex-wrap:wrap;gap:8px;grid-column:1/-1}
+.dia-btn{
+  padding:6px 13px;border-radius:20px;border:1.5px solid var(--border);
+  font-size:12px;font-weight:600;color:var(--txt2);background:var(--surface);
+  cursor:pointer;transition:var(--transition);user-select:none;
+}
+.dia-btn.selected{background:var(--primary);border-color:var(--primary);color:#fff}
+.toggle-wrap{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500;color:var(--txt)}
+.toggle{position:relative;width:44px;height:24px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{
+  position:absolute;inset:0;background:var(--border);border-radius:24px;transition:var(--transition);
+}
+.toggle-slider::before{
+  content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;
+  background:#fff;border-radius:50%;transition:var(--transition);box-shadow:0 1px 4px rgba(0,0,0,.2);
+}
+.toggle input:checked+.toggle-slider{background:var(--primary)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(20px)}
+
+/* ─ Filtros ─ */
+.filter-bar{
+  display:flex;flex-wrap:wrap;gap:12px;align-items:center;
+  padding:16px 22px;background:var(--surface2);border-bottom:1px solid var(--border);
+}
+.filter-bar .form-control{padding:8px 12px;font-size:13px}
+.filter-bar label{font-size:12px;color:var(--txt2);font-weight:600;white-space:nowrap}
+.filter-item{display:flex;align-items:center;gap:8px}
+
+/* ─ QR Section ─ */
+.qr-container{
+  display:flex;flex-direction:column;align-items:center;gap:20px;padding:32px;
+}
+.qr-box{
+  background:var(--surface);border:3px solid var(--primary);border-radius:20px;
+  padding:20px;box-shadow:var(--shadow-md);
+}
+#qrcode canvas,#qrcode img{border-radius:8px}
+.qr-info{text-align:center}
+.qr-info h3{font-size:18px;font-weight:700;margin-bottom:6px}
+.qr-info p{font-size:13px;color:var(--txt3);max-width:360px}
+
+/* ─ Modal ─ */
+.modal-backdrop{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:1000;align-items:center;justify-content:center;padding:20px;
+}
+.modal-backdrop.open{display:flex}
+.modal{
+  background:var(--surface);border-radius:20px;width:680px;max-width:100%;
+  max-height:90vh;overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 24px 80px rgba(0,0,0,.25);animation:modalIn .2s ease;
+}
+@keyframes modalIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 24px;border-bottom:1px solid var(--border);
+}
+.modal-title{font-size:17px;font-weight:700}
+.modal-close{
+  width:32px;height:32px;border-radius:8px;border:none;background:var(--surface2);
+  color:var(--txt2);font-size:18px;display:flex;align-items:center;justify-content:center;
+  transition:var(--transition);cursor:pointer;
+}
+.modal-close:hover{background:rgba(239,68,68,.1);color:var(--danger)}
+.modal-body{padding:24px;overflow-y:auto;flex:1}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+
+/* ─ Toast / Alerts ─ */
+#toastContainer{position:fixed;top:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px}
+.toast{
+  background:var(--surface);border-radius:12px;padding:14px 18px;
+  min-width:280px;max-width:380px;
+  box-shadow:0 8px 32px rgba(0,0,0,.15);border-left:4px solid;
+  display:flex;align-items:center;gap:12px;font-size:13.5px;font-weight:500;
+  animation:toastIn .3s ease;
+}
+.toast.success{border-color:var(--success);color:#065f46}
+.toast.error{border-color:var(--danger);color:#991b1b}
+.toast.info{border-color:var(--primary);color:var(--primary)}
+.toast.warning{border-color:var(--warning);color:#92400e}
+.toast-icon{font-size:18px}
+@keyframes toastIn{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+/* ─ Empty state ─ */
+.empty-state{text-align:center;padding:48px 24px;color:var(--txt3)}
+.empty-state .es-icon{font-size:48px;margin-bottom:12px;opacity:.4}
+.empty-state h4{font-size:16px;font-weight:600;color:var(--txt2);margin-bottom:6px}
+.empty-state p{font-size:13px}
+
+/* ─ Loader ─ */
+.loader{display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.page-loader{display:flex;align-items:center;justify-content:center;padding:60px;flex-direction:column;gap:14px;color:var(--txt3)}
+.page-loader .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}
+
+/* ─ Charts placeholder ─ */
+.chart-row{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:20px}
+.mini-bar-chart{display:flex;align-items:flex-end;gap:6px;height:80px;padding-top:8px}
+.mini-bar{
+  flex:1;background:linear-gradient(to top,var(--primary),var(--primary-light));
+  border-radius:4px 4px 0 0;min-height:4px;transition:var(--transition);
+  position:relative;cursor:default;
+}
+.mini-bar:hover{opacity:.8}
+.mini-bar span{
+  position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);
+  font-size:9px;color:var(--txt3);white-space:nowrap;
+}
+.bar-labels{display:flex;gap:6px;margin-top:20px}
+.bar-label{flex:1;font-size:9px;color:var(--txt3);text-align:center}
+.area-pie{display:flex;flex-direction:column;gap:8px;padding:12px 0}
+.area-row{display:flex;align-items:center;gap:10px}
+.area-bar-wrap{flex:1;height:6px;background:var(--border);border-radius:4px;overflow:hidden}
+.area-bar{height:100%;border-radius:4px;background:linear-gradient(to right,var(--primary),var(--accent));transition:.5s ease}
+.area-name{font-size:12px;color:var(--txt2);font-weight:500;min-width:80px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.area-count{font-size:12px;font-weight:700;color:var(--txt);min-width:24px;text-align:right}
+
+/* ─ Responsive ─ */
+@media(max-width:900px){
+  .chart-row{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:768px){
+  .sidebar{position:fixed;left:-260px;top:0;height:100%;z-index:200;transition:.3s ease}
+  .sidebar.open{left:0}
+  .overlay{display:none}
+  .overlay.visible{display:block}
+  .menu-toggle{display:flex}
+  .content{padding:16px}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .topbar{padding:0 16px}
+  .modal{max-height:95vh}
+  .form-grid{grid-template-columns:1fr}
+  .filter-bar{padding:12px 16px}
+}
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ LOGIN ══════════════ -->
+<div id="loginPage">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">📋</div>
+      <div>
+        <span>AsistenciaQR</span>
+        <small>Control de Personal</small>
+      </div>
+    </div>
+    <h2 class="login-title">Bienvenido 👋</h2>
+    <p class="login-sub">Inicia sesión para continuar</p>
+    <div class="field">
+      <label>Correo electrónico</label>
+      <input type="email" id="loginEmail" placeholder="admin@empresa.com" autocomplete="email"/>
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+    <button class="btn-login" onclick="handleLogin()">
+      <span id="loginBtnText">Iniciar Sesión →</span>
+    </button>
+    <p class="login-hint">Demo: <b>admin@empresa.com</b> / <b>admin123</b></p>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div id="appPage">
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="brand-icon">📋</div>
+        <div class="brand-text">AsistenciaQR<small>Sistema de Control</small></div>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Principal</div>
+      <div class="nav-item active" onclick="navigate('dashboard')" id="nav-dashboard">
+        <span class="nav-icon">📊</span> Dashboard
+      </div>
+      <div class="nav-label">Gestión</div>
+      <div class="nav-item" onclick="navigate('personal')" id="nav-personal">
+        <span class="nav-icon">👥</span> Personal
+      </div>
+      <div class="nav-item" onclick="navigate('asistencia')" id="nav-asistencia">
+        <span class="nav-icon">📱</span> QR Asistencia
+      </div>
+      <div class="nav-label">Reportes</div>
+      <div class="nav-item" onclick="navigate('historial')" id="nav-historial">
+        <span class="nav-icon">📋</span> Historial
+      </div>
+      <div class="nav-item" onclick="navigate('reportes')" id="nav-reportes">
+        <span class="nav-icon">📄</span> Reportes
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="sidebarAvatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebarName">Usuario</div>
+          <div class="user-rol" id="sidebarRol">ROL</div>
+        </div>
+        <button class="logout-btn" onclick="logout()" title="Cerrar sesión">⬡</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <!-- MAIN -->
+  <div class="main-area">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle btn-icon" onclick="toggleSidebar()">☰</button>
+        <div>
+          <div class="page-title" id="pageTitle">Dashboard</div>
+          <div class="page-subtitle" id="pageSubtitle">Resumen del sistema</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-date" id="topbarDate"></div>
+        <div class="topbar-badge" onclick="navigate('asistencia')" title="Escanear QR">📱</div>
+      </div>
+    </header>
+
+    <main class="content" id="mainContent">
+      <div class="page-loader"><div class="spinner"></div><span>Cargando...</span></div>
+    </main>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════ MODAL EMPLEADO ══════════════ -->
+<div class="modal-backdrop" id="modalEmpleado">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalEmpleadoTitle">Nuevo Empleado</span>
+      <button class="modal-close" onclick="closeModal('modalEmpleado')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" id="formEmpleado">
+        <div class="form-section-title">Información Personal</div>
+        <div class="form-group">
+          <label>Nombre Completo *</label>
+          <input class="form-control" id="emp_nombre" placeholder="Ej: Juan Pérez García"/>
+        </div>
+        <div class="form-group">
+          <label>DNI / ID *</label>
+          <input class="form-control" id="emp_dni" placeholder="12345678"/>
+        </div>
+        <div class="form-group">
+          <label>Cargo *</label>
+          <input class="form-control" id="emp_cargo" placeholder="Ej: Analista"/>
+        </div>
+        <div class="form-group">
+          <label>Área *</label>
+          <input class="form-control" id="emp_area" placeholder="Ej: Tecnología"/>
+        </div>
+        <div class="form-section-title">Horario de Trabajo</div>
+        <div class="form-group">
+          <label>Hora de Entrada</label>
+          <input class="form-control" type="time" id="emp_horaEntrada" value="08:00"/>
+        </div>
+        <div class="form-group">
+          <label>Hora de Salida</label>
+          <input class="form-control" type="time" id="emp_horaSalida" value="17:00"/>
+        </div>
+        <div class="form-group">
+          <label>Salida a Almuerzo</label>
+          <input class="form-control" type="time" id="emp_salidaAlmuerzo" value="13:00"/>
+        </div>
+        <div class="form-group">
+          <label>Entrada de Tarde</label>
+          <input class="form-control" type="time" id="emp_entradaTarde" value="14:00"/>
+        </div>
+        <div class="form-group">
+          <label>Salida de Tarde</label>
+          <input class="form-control" type="time" id="emp_salidaTarde" value="18:00"/>
+        </div>
+        <div class="form-group" style="align-items:flex-start;padding-top:22px">
+          <label class="toggle-wrap">
+            <label class="toggle">
+              <input type="checkbox" id="emp_dobleTurno"/>
+              <span class="toggle-slider"></span>
+            </label>
+            Doble Turno
+          </label>
+        </div>
+        <div class="form-section-title">Días Laborales</div>
+        <div class="dias-grid" id="diasGrid">
+          <div class="dia-btn selected" data-dia="Lunes">Lun</div>
+          <div class="dia-btn selected" data-dia="Martes">Mar</div>
+          <div class="dia-btn selected" data-dia="Miércoles">Mié</div>
+          <div class="dia-btn selected" data-dia="Jueves">Jue</div>
+          <div class="dia-btn selected" data-dia="Viernes">Vie</div>
+          <div class="dia-btn" data-dia="Sábado">Sáb</div>
+          <div class="dia-btn" data-dia="Domingo">Dom</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modalEmpleado')">Cancelar</button>
+      <button class="btn btn-primary" id="btnGuardarEmpleado" onclick="guardarEmpleado()">
+        💾 Guardar Empleado
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL QR SCAN ══════════════ -->
+<div class="modal-backdrop" id="modalQRScan">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <span class="modal-title">📱 Registrar Asistencia</span>
+      <button class="modal-close" onclick="closeModal('modalQRScan')">✕</button>
+    </div>
+    <div class="modal-body" style="text-align:center;padding:32px 24px">
+      <p style="color:var(--txt2);font-size:14px;margin-bottom:20px">Selecciona tu nombre para registrar asistencia</p>
+      <div class="form-group" style="text-align:left;margin-bottom:20px">
+        <label>Empleado</label>
+        <select class="form-control" id="scanEmpleadoSelect">
+          <option value="">-- Selecciona un empleado --</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:13px;font-size:15px" onclick="registrarAsistenciaManual()">
+        ✅ Registrar Asistencia
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ TOAST ══════════════ -->
+<div id="toastContainer"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// ESTADO GLOBAL
+// ═══════════════════════════════════════════════
+const State = {
+  session: null,
+  personal: [],
+  qrToken: null,
+  editingId: null,
+  currentPage: 'dashboard'
+};
+
+// ═══════════════════════════════════════════════
+// BACKEND BRIDGE (Google Apps Script)
+// ═══════════════════════════════════════════════
+function gs(accion, payload = {}) {
+  return new Promise((resolve, reject) => {
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(reject)
+        .dispatch(accion, payload);
+    } else {
+      // ── MODO DEMO (sin Apps Script) ───────────────
+      console.log('📡 GS Call:', accion, payload);
+      resolve(mockBackend(accion, payload));
+    }
+  });
+}
+
+// ── MOCK para pruebas locales ──────────────────
+const MOCK_DB = {
+  personal: [
+    { ID:'EMP001', Nombre:'Juan Pérez García', DNI:'12345678', Cargo:'Desarrollador', Area:'TI',
+      DiasLaborales:'Lunes,Martes,Miércoles,Jueves,Viernes', HoraEntrada:'08:00', HoraSalida:'17:00',
+      SalidaAlmuerzo:'13:00', EntradaTarde:'14:00', SalidaTarde:'18:00', DobleTurno:'false', Activo:'true' },
+    { ID:'EMP002', Nombre:'María López Torres', DNI:'87654321', Cargo:'Diseñadora', Area:'Marketing',
+      DiasLaborales:'Lunes,Martes,Miércoles,Jueves,Viernes', HoraEntrada:'09:00', HoraSalida:'18:00',
+      SalidaAlmuerzo:'13:00', EntradaTarde:'14:00', SalidaTarde:'19:00', DobleTurno:'false', Activo:'true' },
+    { ID:'EMP003', Nombre:'Carlos Ruiz Mendoza', DNI:'11223344', Cargo:'Analista', Area:'Finanzas',
+      DiasLaborales:'Lunes,Martes,Miércoles,Jueves,Viernes', HoraEntrada:'07:00', HoraSalida:'16:00',
+      SalidaAlmuerzo:'12:00', EntradaTarde:'13:00', SalidaTarde:'17:00', DobleTurno:'true', Activo:'true' },
+  ],
+  asistencias: []
+};
+
+function mockBackend(accion, payload) {
+  const hoy = new Date().toISOString().split('T')[0];
+  switch(accion) {
+    case 'login': {
+      if (payload.email === 'admin@empresa.com' && payload.password === 'admin123')
+        return { ok:true, token:'DEMO_TOKEN', usuario:{ id:'USR001', nombre:'Administrador', email:'admin@empresa.com', rol:'Administrador' } };
+      if (payload.email === 'usuario@empresa.com' && payload.password === 'usuario123')
+        return { ok:true, token:'DEMO_TOKEN2', usuario:{ id:'USR002', nombre:'Usuario Demo', email:'usuario@empresa.com', rol:'Usuario' } };
+      return { ok:false, message:'Credenciales incorrectas' };
+    }
+    case 'getPersonal': return { ok:true, data:[...MOCK_DB.personal] };
+    case 'crearEmpleado': {
+      const nuevo = { ...payload, ID:'EMP'+Date.now(), Activo:'true' };
+      MOCK_DB.personal.push(nuevo);
+      return { ok:true, message:'Empleado creado', id:nuevo.ID };
+    }
+    case 'actualizarEmpleado': {
+      const idx = MOCK_DB.personal.findIndex(p => p.ID === payload.id);
+      if (idx >= 0) MOCK_DB.personal[idx] = { ...MOCK_DB.personal[idx], ...payload.datos, ID:payload.id };
+      return { ok:true, message:'Empleado actualizado' };
+    }
+    case 'eliminarEmpleado': {
+      const idx = MOCK_DB.personal.findIndex(p => p.ID === payload.id);
+      if (idx >= 0) MOCK_DB.personal[idx].Activo = 'false';
+      return { ok:true, message:'Empleado eliminado' };
+    }
+    case 'getQRToken': return { ok:true, token:'DEMO_QR_TOKEN', url: window.location.href + '?qr=DEMO_QR_TOKEN' };
+    case 'registrarQR': {
+      const emp = MOCK_DB.personal.find(p => p.ID === payload.empleadoId && p.Activo === 'true');
+      if (!emp) return { ok:false, message:'Empleado no encontrado' };
+      const ahora = new Date();
+      const hora = ahora.toTimeString().substring(0,8);
+      const yaReg = MOCK_DB.asistencias.find(a => a.EmpleadoID === emp.ID && a.Fecha === hoy);
+      if (yaReg) return { ok:false, message:'Ya registraste asistencia hoy' };
+      const [hE,mE] = emp.HoraEntrada.split(':').map(Number);
+      const minEsp = hE*60+mE;
+      const [hA,mA] = hora.split(':').map(Number);
+      const minAct = hA*60+mA;
+      const estado = minAct > minEsp+15 ? 'Tarde' : 'Puntual';
+      MOCK_DB.asistencias.push({ ID:'AST'+Date.now(), EmpleadoID:emp.ID, NombreEmpleado:emp.Nombre, DNI:emp.DNI, Area:emp.Area, Cargo:emp.Cargo, Fecha:hoy, Hora:hora, Turno:'Entrada', Estado:estado });
+      return { ok:true, message:`Asistencia registrada: ${estado}`, data:{ nombre:emp.Nombre, hora, fecha:hoy, estado, turno:'Entrada' } };
+    }
+    case 'getAsistencias': {
+      let data = [...MOCK_DB.asistencias];
+      if (payload && payload.fechaInicio) data = data.filter(a => a.Fecha >= payload.fechaInicio);
+      if (payload && payload.fechaFin) data = data.filter(a => a.Fecha <= payload.fechaFin);
+      if (payload && payload.empleadoId) data = data.filter(a => a.EmpleadoID === payload.empleadoId);
+      return { ok:true, data: data.sort((a,b) => (b.Fecha+b.Hora).localeCompare(a.Fecha+a.Hora)) };
+    }
+    case 'getDashboard': {
+      const hoyAsist = MOCK_DB.asistencias.filter(a => a.Fecha === hoy);
+      const graficaSemanal = Array.from({length:7},(_,i) => {
+        const d = new Date(); d.setDate(d.getDate()-6+i);
+        return { fecha: d.toLocaleDateString('es',{day:'2-digit',month:'2-digit'}), cantidad: Math.floor(Math.random()*3) };
+      });
+      hoyAsist.forEach(a => { const f = graficaSemanal[graficaSemanal.length-1]; f.cantidad++; });
+      return { ok:true, data:{ totalEmpleados:MOCK_DB.personal.filter(p=>p.Activo==='true').length, asistenciasHoy:hoyAsist.length, tardanzasHoy:hoyAsist.filter(a=>a.Estado==='Tarde').length, ausentesHoy:MOCK_DB.personal.filter(p=>p.Activo==='true').length-new Set(hoyAsist.map(a=>a.EmpleadoID)).size, graficaSemanal, porArea:{TI:1,Marketing:1,Finanzas:1}, ultimasAsistencias:hoyAsist } };
+    }
+    case 'generarPDF': return { ok:false, message:'PDF disponible con Google Apps Script conectado' };
+    default: return { ok:false, message:'Acción no implementada en demo: ' + accion };
+  }
+}
+
+// ═══════════════════════════════════════════════
+// AUTENTICACIÓN
+// ═══════════════════════════════════════════════
+async function handleLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  if (!email || !pass) { showToast('Ingresa email y contraseña', 'warning'); return; }
+  const btn  = document.getElementById('loginBtnText');
+  btn.innerHTML = '<span class="loader"></span>';
+  try {
+    const res = await gs('login', { email, password: pass });
+    if (res.ok) {
+      State.session = res.usuario;
+      localStorage.setItem('asistenciaSession', JSON.stringify(res.usuario));
+      showApp();
+    } else {
+      showToast(res.message || 'Error de autenticación', 'error');
+    }
+  } catch(e) {
+    showToast('Error de conexión: ' + e, 'error');
+  } finally {
+    btn.innerHTML = 'Iniciar Sesión →';
+  }
+}
+
+function logout() {
+  localStorage.removeItem('asistenciaSession');
+  State.session = null;
+  document.getElementById('appPage').style.display  = 'none';
+  document.getElementById('loginPage').style.display = 'flex';
+  showToast('Sesión cerrada', 'info');
+}
+
+function showApp() {
+  document.getElementById('loginPage').style.display = 'none';
+  document.getElementById('appPage').style.display   = 'flex';
+  document.getElementById('sidebarName').textContent  = State.session.nombre;
+  document.getElementById('sidebarRol').textContent   = State.session.rol;
+  document.getElementById('sidebarAvatar').textContent = State.session.nombre[0].toUpperCase();
+  updateTopbarDate();
+  navigate('dashboard');
+}
+
+// ═══════════════════════════════════════════════
+// NAVEGACIÓN
+// ═══════════════════════════════════════════════
+const PAGE_META = {
+  dashboard: { title:'Dashboard', subtitle:'Resumen general del sistema' },
+  personal:  { title:'Gestión de Personal', subtitle:'Administra los colaboradores' },
+  asistencia:{ title:'Control QR', subtitle:'Código QR para asistencia' },
+  historial: { title:'Historial de Asistencias', subtitle:'Registro completo de marcaciones' },
+  reportes:  { title:'Reportes', subtitle:'Genera y exporta reportes' },
+};
+
+function navigate(page) {
+  State.currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const nav = document.getElementById('nav-' + page);
+  if (nav) nav.classList.add('active');
+  const meta = PAGE_META[page] || {};
+  document.getElementById('pageTitle').textContent    = meta.title || page;
+  document.getElementById('pageSubtitle').textContent = meta.subtitle || '';
+  closeSidebar();
+  const pages = { dashboard:renderDashboard, personal:renderPersonal, asistencia:renderAsistencia, historial:renderHistorial, reportes:renderReportes };
+  if (pages[page]) pages[page]();
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('visible');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('visible');
+}
+
+// ═══════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════
+async function renderDashboard() {
+  const c = document.getElementById('mainContent');
+  c.innerHTML = '<div class="page-loader"><div class="spinner"></div><span>Cargando dashboard...</span></div>';
+  const res = await gs('getDashboard');
+  if (!res.ok) { c.innerHTML = `<div class="empty-state"><div class="es-icon">⚠️</div><h4>${res.message}</h4></div>`; return; }
+  const d = res.data;
+  const maxBar = Math.max(...d.graficaSemanal.map(x => x.cantidad), 1);
+  const areaNombres = Object.keys(d.porArea || {});
+  const areaMax = Math.max(...Object.values(d.porArea || {}), 1);
+
+  c.innerHTML = `
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon blue">👥</div>
+      <div><div class="stat-num">${d.totalEmpleados}</div><div class="stat-label">Total Empleados</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green">✅</div>
+      <div><div class="stat-num">${d.asistenciasHoy}</div><div class="stat-label">Asistencias Hoy</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon yellow">⏰</div>
+      <div><div class="stat-num">${d.tardanzasHoy}</div><div class="stat-label">Tardanzas Hoy</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon red">❌</div>
+      <div><div class="stat-num">${d.ausentesHoy}</div><div class="stat-label">Ausentes Hoy</div></div>
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="section-card">
+      <div class="section-head">
+        <div><div class="section-title">📈 Asistencias últimos 7 días</div></div>
+      </div>
+      <div class="section-body">
+        <div class="mini-bar-chart" id="barChart"></div>
+        <div class="bar-labels" id="barLabels"></div>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-head">
+        <div><div class="section-title">🏢 Por Área (hoy)</div></div>
+      </div>
+      <div class="section-body">
+        <div class="area-pie" id="areaPie"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-head">
+      <div><div class="section-title">🕐 Últimas Marcaciones Hoy</div></div>
+      <button class="btn btn-outline btn-sm" onclick="navigate('historial')">Ver todo</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Empleado</th><th>Área</th><th>Hora</th><th>Turno</th><th>Estado</th></tr></thead>
+        <tbody id="ultimasTable"></tbody>
+      </table>
+    </div>
+  </div>`;
+
+  // Gráfica de barras
+  const bc = document.getElementById('barChart');
+  const bl = document.getElementById('barLabels');
+  d.graficaSemanal.forEach(g => {
+    const pct = Math.max((g.cantidad / maxBar) * 100, g.cantidad>0?8:4);
+    bc.innerHTML += `<div class="mini-bar" style="height:${pct}%" title="${g.cantidad} registros"></div>`;
+    bl.innerHTML += `<div class="bar-label">${g.fecha}<br><b>${g.cantidad}</b></div>`;
+  });
+
+  // Áreas
+  const ap = document.getElementById('areaPie');
+  if (areaNombres.length === 0) {
+    ap.innerHTML = '<div style="color:var(--txt3);font-size:13px;text-align:center;padding:20px">Sin datos hoy</div>';
+  } else {
+    areaNombres.forEach(area => {
+      const pct = Math.round((d.porArea[area]/areaMax)*100);
+      ap.innerHTML += `<div class="area-row"><div class="area-name">${area}</div><div class="area-bar-wrap"><div class="area-bar" style="width:${pct}%"></div></div><div class="area-count">${d.porArea[area]}</div></div>`;
+    });
+  }
+
+  // Tabla últimas
+  const ut = document.getElementById('ultimasTable');
+  if (!d.ultimasAsistencias || d.ultimasAsistencias.length === 0) {
+    ut.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--txt3);padding:24px">Sin marcaciones hoy</td></tr>';
+  } else {
+    d.ultimasAsistencias.slice(0,8).forEach(a => {
+      ut.innerHTML += `<tr>
+        <td><div class="cell-name">${a.NombreEmpleado||a['NombreEmpleado']}</div><div class="cell-sub">${a.DNI}</div></td>
+        <td>${a.Area}</td><td><b>${(a.Hora||'').substring(0,5)}</b></td>
+        <td>${a.Turno}</td>
+        <td><span class="badge badge-${(a.Estado||'').toLowerCase()}">${a.Estado}</span></td>
+      </tr>`;
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════
+// PERSONAL
+// ═══════════════════════════════════════════════
+async function renderPersonal() {
+  const c = document.getElementById('mainContent');
+  c.innerHTML = '<div class="page-loader"><div class="spinner"></div><span>Cargando personal...</span></div>';
+  const res = await gs('getPersonal');
+  if (!res.ok) { c.innerHTML = `<div class="empty-state"><div class="es-icon">⚠️</div><h4>${res.message}</h4></div>`; return; }
+  State.personal = res.data;
+
+  c.innerHTML = `
+  <div class="section-card">
+    <div class="section-head">
+      <div>
+        <div class="section-title">👥 Colaboradores (${State.personal.length})</div>
+        <div class="section-sub">Gestiona el personal de la empresa</div>
+      </div>
+      <button class="btn btn-primary" onclick="openModalEmpleado()">＋ Nuevo Empleado</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nombre</th><th>DNI</th><th>Cargo</th><th>Área</th><th>Horario</th><th>Días</th><th>Acciones</th></tr></thead>
+        <tbody id="personalTable"></tbody>
+      </table>
+    </div>
+  </div>`;
+
+  const tb = document.getElementById('personalTable');
+  if (State.personal.length === 0) {
+    tb.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="es-icon">👥</div><h4>Sin colaboradores</h4><p>Agrega el primer empleado</p></div></td></tr>';
+    return;
+  }
+  State.personal.forEach(emp => {
+    const dias = (emp.DiasLaborales || emp['DiasLaborales'] || '').split(',').map(d => d.trim().substring(0,3)).join(' ');
+    tb.innerHTML += `<tr>
+      <td><div class="cell-name">${emp.Nombre||emp['Nombre']}</div></td>
+      <td>${emp.DNI||emp['DNI']}</td>
+      <td>${emp.Cargo||emp['Cargo']}</td>
+      <td>${emp.Area||emp['Area']}</td>
+      <td style="font-size:12px;color:var(--txt2)">${emp.HoraEntrada||emp['HoraEntrada']} – ${emp.HoraSalida||emp['HoraSalida']}</td>
+      <td style="font-size:11px;color:var(--txt3)">${dias}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-icon btn-sm" onclick="editarEmpleado('${emp.ID||emp['ID']}')" title="Editar">✏️</button>
+          <button class="btn btn-icon btn-sm" onclick="confirmarEliminar('${emp.ID||emp['ID']}','${emp.Nombre||emp['Nombre']}')" title="Eliminar">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+}
+
+function openModalEmpleado(emp) {
+  State.editingId = null;
+  document.getElementById('modalEmpleadoTitle').textContent = '➕ Nuevo Empleado';
+  document.getElementById('btnGuardarEmpleado').textContent = '💾 Guardar Empleado';
+  ['nombre','dni','cargo','area'].forEach(f => document.getElementById('emp_'+f).value = '');
+  document.getElementById('emp_horaEntrada').value = '08:00';
+  document.getElementById('emp_horaSalida').value  = '17:00';
+  document.getElementById('emp_salidaAlmuerzo').value = '13:00';
+  document.getElementById('emp_entradaTarde').value = '14:00';
+  document.getElementById('emp_salidaTarde').value  = '18:00';
+  document.getElementById('emp_dobleTurno').checked = false;
+  document.querySelectorAll('.dia-btn').forEach(d => {
+    const wd = d.dataset.dia;
+    d.classList.toggle('selected', ['Lunes','Martes','Miércoles','Jueves','Viernes'].includes(wd));
+  });
+  openModal('modalEmpleado');
+}
+
+function editarEmpleado(id) {
+  const emp = State.personal.find(p => (p.ID||p['ID']) === id);
+  if (!emp) return;
+  State.editingId = id;
+  document.getElementById('modalEmpleadoTitle').textContent = '✏️ Editar Empleado';
+  document.getElementById('btnGuardarEmpleado').textContent = '💾 Actualizar';
+  document.getElementById('emp_nombre').value = emp.Nombre||emp['Nombre']||'';
+  document.getElementById('emp_dni').value    = emp.DNI||emp['DNI']||'';
+  document.getElementById('emp_cargo').value  = emp.Cargo||emp['Cargo']||'';
+  document.getElementById('emp_area').value   = emp.Area||emp['Area']||'';
+  document.getElementById('emp_horaEntrada').value    = emp.HoraEntrada||emp['HoraEntrada']||'08:00';
+  document.getElementById('emp_horaSalida').value     = emp.HoraSalida||emp['HoraSalida']||'17:00';
+  document.getElementById('emp_salidaAlmuerzo').value = emp.SalidaAlmuerzo||emp['SalidaAlmuerzo']||'';
+  document.getElementById('emp_entradaTarde').value   = emp.EntradaTarde||emp['EntradaTarde']||'';
+  document.getElementById('emp_salidaTarde').value    = emp.SalidaTarde||emp['SalidaTarde']||'';
+  document.getElementById('emp_dobleTurno').checked   = (emp.DobleTurno||emp['DobleTurno']) === 'true';
+  const diasLab = (emp.DiasLaborales||emp['DiasLaborales']||'').split(',').map(d => d.trim());
+  document.querySelectorAll('.dia-btn').forEach(d => d.classList.toggle('selected', diasLab.includes(d.dataset.dia)));
+  openModal('modalEmpleado');
+}
+
+async function guardarEmpleado() {
+  const nombre = document.getElementById('emp_nombre').value.trim();
+  const dni    = document.getElementById('emp_dni').value.trim();
+  if (!nombre || !dni) { showToast('Nombre y DNI son obligatorios', 'warning'); return; }
+  const diasSeleccionados = [...document.querySelectorAll('.dia-btn.selected')].map(d => d.dataset.dia);
+  if (diasSeleccionados.length === 0) { showToast('Selecciona al menos un día laboral', 'warning'); return; }
+  const datos = {
+    nombre, dni,
+    cargo:         document.getElementById('emp_cargo').value.trim(),
+    area:          document.getElementById('emp_area').value.trim(),
+    horaEntrada:   document.getElementById('emp_horaEntrada').value,
+    horaSalida:    document.getElementById('emp_horaSalida').value,
+    salidaAlmuerzo:document.getElementById('emp_salidaAlmuerzo').value,
+    entradaTarde:  document.getElementById('emp_entradaTarde').value,
+    salidaTarde:   document.getElementById('emp_salidaTarde').value,
+    dobleTurno:    document.getElementById('emp_dobleTurno').checked,
+    diasLaborales: diasSeleccionados
+  };
+  const btn = document.getElementById('btnGuardarEmpleado');
+  btn.innerHTML = '<span class="loader"></span> Guardando...';
+  btn.disabled  = true;
+  let res;
+  if (State.editingId) {
+    res = await gs('actualizarEmpleado', { id: State.editingId, datos });
+  } else {
+    res = await gs('crearEmpleado', datos);
+  }
+  btn.disabled = false;
+  if (res.ok) {
+    showToast(res.message, 'success');
+    closeModal('modalEmpleado');
+    renderPersonal();
+  } else {
+    showToast(res.message || 'Error al guardar', 'error');
+    btn.innerHTML = '💾 Guardar Empleado';
+  }
+}
+
+function confirmarEliminar(id, nombre) {
+  if (!confirm(`¿Eliminar a ${nombre}?\nEsta acción no se puede deshacer.`)) return;
+  gs('eliminarEmpleado', { id }).then(res => {
+    showToast(res.ok ? 'Empleado eliminado' : res.message, res.ok ? 'success' : 'error');
+    if (res.ok) renderPersonal();
+  });
+}
+
+// ═══════════════════════════════════════════════
+// QR ASISTENCIA
+// ═══════════════════════════════════════════════
+async function renderAsistencia() {
+  const c = document.getElementById('mainContent');
+  c.innerHTML = '<div class="page-loader"><div class="spinner"></div><span>Generando QR...</span></div>';
+  const [resQR, resPer] = await Promise.all([gs('getQRToken'), gs('getPersonal')]);
+  if (resPer.ok) State.personal = resPer.data;
+
+  c.innerHTML = `
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div class="section-card">
+      <div class="section-head"><div class="section-title">📱 Código QR del Sistema</div></div>
+      <div class="qr-container">
+        <div class="qr-box"><div id="qrcode"></div></div>
+        <div class="qr-info">
+          <h3>Escanea para registrar asistencia</h3>
+          <p>Los empleados deben escanear este código con su celular. El QR se vincula automáticamente a su perfil.</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">
+          <button class="btn btn-outline" onclick="regenerarQR()">🔄 Regenerar QR</button>
+          <button class="btn btn-primary" onclick="abrirModalScan()">✅ Registrar Manualmente</button>
+        </div>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-head"><div class="section-title">📋 Asistencias de Hoy</div></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Empleado</th><th>Hora</th><th>Estado</th></tr></thead>
+          <tbody id="hoyTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>`;
+
+  // Generar QR
+  const token = resQR.ok ? resQR.token : 'DEMO_TOKEN';
+  State.qrToken = token;
+  const qrUrl = resQR.ok ? resQR.url : (window.location.href + '?qr=' + token);
+  new QRCode(document.getElementById('qrcode'), {
+    text: qrUrl, width: 220, height: 220,
+    colorDark:'#0f172a', colorLight:'#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+
+  // Cargar asistencias de hoy
+  const hoy = new Date().toISOString().split('T')[0];
+  const resA = await gs('getAsistencias', { fechaInicio: hoy, fechaFin: hoy });
+  const tb = document.getElementById('hoyTable');
+  if (!resA.ok || resA.data.length === 0) {
+    tb.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--txt3);padding:24px">Sin marcaciones hoy</td></tr>';
+  } else {
+    resA.data.forEach(a => {
+      tb.innerHTML += `<tr>
+        <td><div class="cell-name">${a.NombreEmpleado||a['NombreEmpleado']}</div><div class="cell-sub">${a.Area}</div></td>
+        <td><b>${(a.Hora||'').substring(0,5)}</b></td>
+        <td><span class="badge badge-${(a.Estado||'').toLowerCase()}">${a.Estado}</span></td>
+      </tr>`;
+    });
+  }
+}
+
+async function regenerarQR() {
+  if (!confirm('¿Regenerar el QR? El código anterior dejará de funcionar.')) return;
+  const res = await gs('regenerarQR');
+  if (res.ok) { showToast('QR regenerado', 'success'); renderAsistencia(); }
+  else showToast(res.message, 'error');
+}
+
+async function abrirModalScan() {
+  const res = await gs('getPersonal');
+  if (res.ok) State.personal = res.data;
+  const sel = document.getElementById('scanEmpleadoSelect');
+  sel.innerHTML = '<option value="">-- Selecciona un empleado --</option>';
+  State.personal.forEach(emp => {
+    sel.innerHTML += `<option value="${emp.ID||emp['ID']}">${emp.Nombre||emp['Nombre']} (${emp.DNI||emp['DNI']})</option>`;
+  });
+  openModal('modalQRScan');
+}
+
+async function registrarAsistenciaManual() {
+  const empleadoId = document.getElementById('scanEmpleadoSelect').value;
+  if (!empleadoId) { showToast('Selecciona un empleado', 'warning'); return; }
+  const res = await gs('registrarQR', { token: State.qrToken || 'DEMO_QR_TOKEN', empleadoId });
+  if (res.ok) {
+    showToast(`✅ ${res.data.nombre} — ${res.data.estado} a las ${res.data.hora.substring(0,5)}`, 'success');
+    closeModal('modalQRScan');
+    if (State.currentPage === 'asistencia') renderAsistencia();
+  } else {
+    showToast(res.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════
+// HISTORIAL
+// ═══════════════════════════════════════════════
+async function renderHistorial() {
+  const c = document.getElementById('mainContent');
+  const hoy = new Date().toISOString().split('T')[0];
+  const hace7 = new Date(); hace7.setDate(hace7.getDate()-7);
+  const hace7Str = hace7.toISOString().split('T')[0];
+
+  // Cargar personal para filtros
+  const resPer = await gs('getPersonal');
+  if (resPer.ok) State.personal = resPer.data;
+  const areas = [...new Set(State.personal.map(p => p.Area||p['Area']).filter(Boolean))];
+
+  c.innerHTML = `
+  <div class="section-card">
+    <div class="section-head">
+      <div><div class="section-title">📋 Historial de Asistencias</div></div>
+    </div>
+    <div class="filter-bar">
+      <div class="filter-item"><label>Desde:</label><input type="date" class="form-control" id="filtFechaIni" value="${hace7Str}"/></div>
+      <div class="filter-item"><label>Hasta:</label><input type="date" class="form-control" id="filtFechaFin" value="${hoy}"/></div>
+      <div class="filter-item">
+        <label>Empleado:</label>
+        <select class="form-control" id="filtEmpleado" style="min-width:160px">
+          <option value="">Todos</option>
+          ${State.personal.map(p=>`<option value="${p.ID||p['ID']}">${p.Nombre||p['Nombre']}</option>`).join('')}
+        </select>
+      </div>
+      <div class="filter-item">
+        <label>Área:</label>
+        <select class="form-control" id="filtArea">
+          <option value="">Todas</option>
+          ${areas.map(a=>`<option>${a}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="cargarHistorial()">🔍 Filtrar</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Empleado</th><th>DNI</th><th>Área</th><th>Cargo</th><th>Fecha</th><th>Hora</th><th>Turno</th><th>Estado</th></tr></thead>
+        <tbody id="historialTable"></tbody>
+      </table>
+    </div>
+    <div id="historialPager" style="padding:16px 22px;font-size:12px;color:var(--txt3);border-top:1px solid var(--border)"></div>
+  </div>`;
+
+  cargarHistorial();
+}
+
+async function cargarHistorial() {
+  const tb = document.getElementById('historialTable');
+  tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px"><div class="page-loader" style="padding:12px"><div class="spinner"></div></div></td></tr>';
+  const filtros = {
+    fechaInicio: document.getElementById('filtFechaIni')?.value,
+    fechaFin:    document.getElementById('filtFechaFin')?.value,
+    empleadoId:  document.getElementById('filtEmpleado')?.value || null,
+    area:        document.getElementById('filtArea')?.value     || null
+  };
+  if (!filtros.empleadoId) delete filtros.empleadoId;
+  if (!filtros.area) delete filtros.area;
+  const res = await gs('getAsistencias', filtros);
+  const pager = document.getElementById('historialPager');
+  if (!res.ok) { tb.innerHTML = '<tr><td colspan="8" style="color:var(--danger);text-align:center;padding:16px">'+res.message+'</td></tr>'; return; }
+  if (res.data.length === 0) {
+    tb.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="es-icon">📋</div><h4>Sin registros</h4><p>Ajusta los filtros de búsqueda</p></div></td></tr>';
+    if (pager) pager.textContent = '0 registros';
+    return;
+  }
+  tb.innerHTML = '';
+  res.data.forEach(a => {
+    tb.innerHTML += `<tr>
+      <td><div class="cell-name">${a.NombreEmpleado||a['NombreEmpleado']}</div></td>
+      <td>${a.DNI}</td><td>${a.Area}</td><td style="font-size:12px;color:var(--txt2)">${a.Cargo}</td>
+      <td>${a.Fecha}</td><td><b>${(a.Hora||'').substring(0,5)}</b></td><td>${a.Turno}</td>
+      <td><span class="badge badge-${(a.Estado||'').toLowerCase()}">${a.Estado}</span></td>
+    </tr>`;
+  });
+  if (pager) pager.textContent = `${res.data.length} registro(s) encontrado(s)`;
+}
+
+// ═══════════════════════════════════════════════
+// REPORTES
+// ═══════════════════════════════════════════════
+async function renderReportes() {
+  const c = document.getElementById('mainContent');
+  const hoy = new Date().toISOString().split('T')[0];
+  const iniciomes = new Date(); iniciomes.setDate(1);
+  const inicioStr = iniciomes.toISOString().split('T')[0];
+
+  const resPer = await gs('getPersonal');
+  if (resPer.ok) State.personal = resPer.data;
+
+  c.innerHTML = `
+  <div class="section-card" style="max-width:600px">
+    <div class="section-head"><div class="section-title">📄 Generar Reporte de Asistencias</div></div>
+    <div class="section-body">
+      <div class="form-grid" style="gap:16px">
+        <div class="form-group">
+          <label>Fecha Inicio *</label>
+          <input type="date" class="form-control" id="rptFechaIni" value="${inicioStr}"/>
+        </div>
+        <div class="form-group">
+          <label>Fecha Fin *</label>
+          <input type="date" class="form-control" id="rptFechaFin" value="${hoy}"/>
+        </div>
+        <div class="form-group">
+          <label>Empleado (opcional)</label>
+          <select class="form-control" id="rptEmpleado">
+            <option value="">Todos los empleados</option>
+            ${State.personal.map(p=>`<option value="${p.ID||p['ID']}">${p.Nombre||p['Nombre']}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="align-items:flex-end">
+          <button class="btn btn-success" style="width:100%" onclick="verPreviaReporte()">👁️ Vista Previa</button>
+        </div>
+      </div>
+      <div style="margin-top:20px;padding:16px;background:rgba(79,70,229,.05);border-radius:10px;border:1px solid var(--primary-glow)">
+        <p style="font-size:13px;color:var(--txt2);margin-bottom:12px">⚡ <b>Exportar PDF</b> — Genera un reporte profesional en PDF con encabezado, logo y tabla de asistencias.</p>
+        <button class="btn btn-primary" onclick="exportarPDF()" id="btnPDF">📥 Exportar PDF</button>
+        <p style="font-size:11px;color:var(--txt3);margin-top:8px">* Requiere Google Apps Script conectado</p>
+      </div>
+    </div>
+  </div>
+  <div id="previaReporte" style="margin-top:20px"></div>`;
+}
+
+async function verPreviaReporte() {
+  const filtros = {
+    fechaInicio: document.getElementById('rptFechaIni').value,
+    fechaFin:    document.getElementById('rptFechaFin').value,
+    empleadoId:  document.getElementById('rptEmpleado').value || null
+  };
+  if (!filtros.empleadoId) delete filtros.empleadoId;
+  const prev = document.getElementById('previaReporte');
+  prev.innerHTML = '<div class="page-loader"><div class="spinner"></div><span>Cargando...</span></div>';
+  const res = await gs('getAsistencias', filtros);
+  if (!res.ok) { prev.innerHTML = `<div class="empty-state"><div class="es-icon">⚠️</div><h4>${res.message}</h4></div>`; return; }
+  const puntuales = res.data.filter(a=>a.Estado==='Puntual').length;
+  const tardanzas = res.data.filter(a=>a.Estado==='Tarde').length;
+  prev.innerHTML = `
+  <div class="section-card">
+    <div class="section-head">
+      <div><div class="section-title">Vista Previa del Reporte</div><div class="section-sub">${filtros.fechaInicio} al ${filtros.fechaFin} — ${res.data.length} registros</div></div>
+    </div>
+    <div style="display:flex;gap:16px;padding:16px 22px;border-bottom:1px solid var(--border)">
+      <div class="stat-card" style="flex:1;padding:16px"><div class="stat-icon green">✅</div><div><div class="stat-num" style="font-size:22px">${puntuales}</div><div class="stat-label">Puntuales</div></div></div>
+      <div class="stat-card" style="flex:1;padding:16px"><div class="stat-icon yellow">⏰</div><div><div class="stat-num" style="font-size:22px">${tardanzas}</div><div class="stat-label">Tardanzas</div></div></div>
+      <div class="stat-card" style="flex:1;padding:16px"><div class="stat-icon blue">📊</div><div><div class="stat-num" style="font-size:22px">${res.data.length}</div><div class="stat-label">Total</div></div></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Empleado</th><th>Área</th><th>Fecha</th><th>Hora</th><th>Estado</th></tr></thead>
+        <tbody>${res.data.slice(0,50).map((a,i)=>`<tr><td style="color:var(--txt3)">${i+1}</td><td><div class="cell-name">${a.NombreEmpleado||a['NombreEmpleado']}</div></td><td>${a.Area}</td><td>${a.Fecha}</td><td><b>${(a.Hora||'').substring(0,5)}</b></td><td><span class="badge badge-${(a.Estado||'').toLowerCase()}">${a.Estado}</span></td></tr>`).join('')}</tbody>
+      </table>
+    </div>
+    ${res.data.length>50?`<div style="padding:12px 22px;font-size:12px;color:var(--txt3)">Mostrando 50 de ${res.data.length} registros</div>`:''}
+  </div>`;
+}
+
+async function exportarPDF() {
+  const btn = document.getElementById('btnPDF');
+  const filtros = {
+    fechaInicio: document.getElementById('rptFechaIni').value,
+    fechaFin:    document.getElementById('rptFechaFin').value,
+    empleadoId:  document.getElementById('rptEmpleado').value || null
+  };
+  if (!filtros.empleadoId) delete filtros.empleadoId;
+  btn.innerHTML = '<span class="loader"></span> Generando...';
+  btn.disabled  = true;
+  const res = await gs('generarPDF', filtros);
+  btn.disabled = false;
+  btn.innerHTML = '📥 Exportar PDF';
+  if (res.ok && res.pdf) {
+    const link = document.createElement('a');
+    link.href     = 'data:application/pdf;base64,' + res.pdf;
+    link.download = res.filename || 'reporte.pdf';
+    link.click();
+    showToast('PDF generado exitosamente', 'success');
+  } else {
+    showToast(res.message || 'Error al generar PDF', 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════
+// UTILIDADES UI
+// ═══════════════════════════════════════════════
+function openModal(id)  { document.getElementById(id).classList.add('open') }
+function closeModal(id) { document.getElementById(id).classList.remove('open') }
+
+function showToast(msg, type='info') {
+  const icons = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️' };
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  document.getElementById('toastContainer').appendChild(toast);
+  setTimeout(() => { toast.style.animation='toastIn .3s ease reverse'; setTimeout(()=>toast.remove(),300) }, 3800);
+}
+
+function updateTopbarDate() {
+  const d = new Date();
+  document.getElementById('topbarDate').textContent = d.toLocaleDateString('es-PE',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  setTimeout(updateTopbarDate, 60000);
+}
+
+// ── Días seleccionables ──
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('dia-btn')) e.target.classList.toggle('selected');
+});
+
+// ── Enter en login ──
+document.addEventListener('keypress', e => {
+  if (e.key === 'Enter' && document.getElementById('loginPage').style.display !== 'none') handleLogin();
+});
+
+// ── Click fuera del modal ──
+document.querySelectorAll('.modal-backdrop').forEach(bd => {
+  bd.addEventListener('click', e => { if (e.target === bd) bd.classList.remove('open'); });
+});
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+(function init() {
+  // Revisar sesión guardada
+  const saved = localStorage.getItem('asistenciaSession');
+  if (saved) {
+    try {
+      State.session = JSON.parse(saved);
+      showApp();
+      return;
+    } catch(e) { localStorage.removeItem('asistenciaSession'); }
+  }
+  // Revisar si viene de QR
+  const params = new URLSearchParams(window.location.search);
+  const qrParam = params.get('qr');
+  if (qrParam) {
+    // Guardar QR token y mostrar login con mensaje
+    sessionStorage.setItem('pendingQR', qrParam);
+    showToast('Escaneo detectado — inicia sesión para registrar asistencia', 'info');
+  }
+  document.getElementById('loginPage').style.display = 'flex';
+})();
+</script>
+</body>
+</html>
